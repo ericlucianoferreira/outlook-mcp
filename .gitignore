@@ -3,3 +3,7 @@ node_modules/
 .rate-limit.json
 .env
 *.log
+
+# Arquivos de teste local
+test*.js
+test*.ts
