@@ -4,11 +4,12 @@
 
 import { z } from "zod";
 import { graphRequest } from "../graph.js";
+import { validateRecipients, checkRateLimit, registerAction } from "../guardrails.js";
 
 export const sendEmailSchema = z.object({
   para: z
     .string()
-    .describe("E-mail do destinatário. Para múltiplos, separe por vírgula."),
+    .describe("E-mail do destinatário. Para múltiplos, separe por vírgula. Máximo 5 destinatários."),
   assunto: z.string().describe("Assunto do e-mail"),
   corpo: z.string().describe("Corpo do e-mail em texto simples ou HTML"),
   cc: z
@@ -20,10 +21,23 @@ export const sendEmailSchema = z.object({
     .optional()
     .default(false)
     .describe("Se true, o corpo será enviado como HTML. Padrão: false (texto simples)"),
+  confirmacao: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Obrigatório true ao enviar o 11º e-mail da hora (ou múltiplos de 10). Confirma que você está ciente do volume."
+    ),
 });
 
 export async function sendEmail(params) {
-  const { para, assunto, corpo, cc, html } = params;
+  const { para, assunto, corpo, cc, html, confirmacao } = params;
+
+  // 1. Valida número de destinatários
+  validateRecipients(para);
+
+  // 2. Verifica rate limit
+  await checkRateLimit("email", confirmacao);
 
   const toRecipients = para.split(",").map((email) => ({
     emailAddress: { address: email.trim() },
@@ -46,6 +60,9 @@ export async function sendEmail(params) {
   };
 
   await graphRequest("POST", "/me/sendMail", { message });
+
+  // 3. Registra ação após sucesso
+  await registerAction("email");
 
   const destinatarios = toRecipients.map((r) => r.emailAddress.address).join(", ");
   return `E-mail enviado com sucesso para: ${destinatarios}`;

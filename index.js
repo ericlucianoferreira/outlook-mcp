@@ -11,6 +11,7 @@ import { readEmails, readEmailsSchema } from "./src/tools/read-emails.js";
 import { listEvents, listEventsSchema } from "./src/tools/list-events.js";
 import { searchContacts, searchContactsSchema } from "./src/tools/search-contacts.js";
 import { checkAvailability, checkAvailabilitySchema } from "./src/tools/check-availability.js";
+import { markEmail, markEmailSchema } from "./src/tools/mark-email.js";
 
 const server = new McpServer({
   name: "outlook-mcp",
@@ -125,6 +126,25 @@ server.tool(
     } catch (err) {
       return {
         content: [{ type: "text", text: `Erro ao verificar disponibilidade: ${err.message}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// ─── Ferramenta: Marcar E-mail ────────────────────────────────────────────────
+
+server.tool(
+  "marcar_email",
+  "Marca um e-mail como lido ou não lido no Outlook",
+  markEmailSchema.shape,
+  async (params) => {
+    try {
+      const result = await markEmail(params);
+      return { content: [{ type: "text", text: result }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `Erro ao marcar e-mail: ${err.message}` }],
         isError: true,
       };
     }

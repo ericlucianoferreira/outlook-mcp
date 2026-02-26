@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { graphRequest } from "../graph.js";
+import { validateNotRecurring, checkRateLimit, registerAction } from "../guardrails.js";
 
 export const createEventSchema = z.object({
   titulo: z.string().describe("Título do compromisso"),
@@ -25,7 +26,9 @@ export const createEventSchema = z.object({
   convidados: z
     .string()
     .optional()
-    .describe("E-mails dos convidados separados por vírgula"),
+    .describe(
+      "E-mails dos convidados separados por vírgula. Informe os e-mails ou deixe vazio se não houver convidados."
+    ),
   dia_inteiro: z
     .boolean()
     .optional()
@@ -36,10 +39,23 @@ export const createEventSchema = z.object({
     .optional()
     .default("America/Sao_Paulo")
     .describe("Fuso horário do evento. Padrão: America/Sao_Paulo"),
+  confirmacao: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Obrigatório true ao criar o 11º compromisso da hora (ou múltiplos de 10)."
+    ),
 });
 
 export async function createEvent(params) {
-  const { titulo, inicio, fim, descricao, local, convidados, dia_inteiro, fuso_horario } = params;
+  const { titulo, inicio, fim, descricao, local, convidados, dia_inteiro, fuso_horario, confirmacao } = params;
+
+  // 1. Garante que não há campos de recorrência no payload
+  validateNotRecurring(params);
+
+  // 2. Verifica rate limit
+  await checkRateLimit("event", confirmacao);
 
   const attendees = convidados
     ? convidados.split(",").map((email) => ({
@@ -74,6 +90,9 @@ export async function createEvent(params) {
   };
 
   const result = await graphRequest("POST", "/me/events", event);
+
+  // 3. Registra ação após sucesso
+  await registerAction("event");
 
   const link = result.webLink || "";
   const convidadosStr =

@@ -1,4 +1,5 @@
 node_modules/
 .token-cache.json
+.rate-limit.json
 .env
 *.log
