@@ -12,6 +12,7 @@ import { listEvents, listEventsSchema } from "./src/tools/list-events.js";
 import { searchContacts, searchContactsSchema } from "./src/tools/search-contacts.js";
 import { checkAvailability, checkAvailabilitySchema } from "./src/tools/check-availability.js";
 import { markEmail, markEmailSchema } from "./src/tools/mark-email.js";
+import { updateEvent, updateEventSchema } from "./src/tools/update-event.js";
 
 const server = new McpServer({
   name: "outlook-mcp",
@@ -145,6 +146,25 @@ server.tool(
     } catch (err) {
       return {
         content: [{ type: "text", text: `Erro ao marcar e-mail: ${err.message}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// ─── Ferramenta: Atualizar Compromisso ───────────────────────────────────────
+
+server.tool(
+  "atualizar_compromisso",
+  "Atualiza campos de um compromisso existente no Calendário do Outlook (título, descrição, local, horário, disponibilidade). Busca o evento pelo título e data.",
+  updateEventSchema.shape,
+  async (params) => {
+    try {
+      const result = await updateEvent(params);
+      return { content: [{ type: "text", text: result }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `Erro ao atualizar compromisso: ${err.message}` }],
         isError: true,
       };
     }
