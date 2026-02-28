@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { graphRequest, graphRequestPaginated } from "../graph.js";
+import { graphRequest } from "../graph.js";
 import { checkRateLimit, registerAction } from "../guardrails.js";
 
 export const replyEmailSchema = z.object({
@@ -58,8 +58,9 @@ export async function replyEmail(params) {
   let msgId = email_id;
 
   if (!msgId) {
-    const endpoint = `/me/mailFolders/inbox/messages?$top=50&$orderby=receivedDateTime desc&$search=${encodeURIComponent(`"${busca_assunto}"`)}&$select=id,subject,from,receivedDateTime`;
-    const result = await graphRequestPaginated(endpoint, 50);
+    // $search é incompatível com $orderby e com paginação — usar graphRequest simples
+    const endpoint = `/me/mailFolders/inbox/messages?$top=50&$search=${encodeURIComponent(`"${busca_assunto}"`)}&$select=id,subject,from,receivedDateTime`;
+    const result = await graphRequest("GET", endpoint);
 
     if (!result?.value?.length) {
       return `Nenhum e-mail encontrado com o assunto "${busca_assunto}" na caixa de entrada.`;
