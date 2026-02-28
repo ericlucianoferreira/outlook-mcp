@@ -13,6 +13,8 @@ import { searchContacts, searchContactsSchema } from "./src/tools/search-contact
 import { checkAvailability, checkAvailabilitySchema } from "./src/tools/check-availability.js";
 import { markEmail, markEmailSchema } from "./src/tools/mark-email.js";
 import { updateEvent, updateEventSchema } from "./src/tools/update-event.js";
+import { deleteEvent, deleteEventSchema } from "./src/tools/delete-event.js";
+import { replyEmail, replyEmailSchema } from "./src/tools/reply-email.js";
 
 const server = new McpServer({
   name: "outlook-mcp",
@@ -148,6 +150,38 @@ server.tool(
       return { content: [{ type: "text", text: result }] };
     } catch (err) {
       return { content: [{ type: "text", text: errMsg(err, "atualizar compromisso") }], isError: true };
+    }
+  }
+);
+
+// ─── Ferramenta: Deletar Compromisso ─────────────────────────────────────────
+
+server.tool(
+  "deletar_compromisso",
+  "Deleta um compromisso do Calendário do Outlook. Busca pelo título e data, mostra preview e exige confirmacao: true para confirmar a exclusão.",
+  deleteEventSchema.shape,
+  async (params) => {
+    try {
+      const result = await deleteEvent(params);
+      return { content: [{ type: "text", text: result }] };
+    } catch (err) {
+      return { content: [{ type: "text", text: errMsg(err, "deletar compromisso") }], isError: true };
+    }
+  }
+);
+
+// ─── Ferramenta: Responder E-mail ─────────────────────────────────────────────
+
+server.tool(
+  "responder_email",
+  "Responde a um e-mail existente mantendo o threading. Pode responder apenas ao remetente ou a todos. Aceita email_id diretamente ou busca pelo assunto.",
+  replyEmailSchema.shape,
+  async (params) => {
+    try {
+      const result = await replyEmail(params);
+      return { content: [{ type: "text", text: result }] };
+    } catch (err) {
+      return { content: [{ type: "text", text: errMsg(err, "responder e-mail") }], isError: true };
     }
   }
 );
