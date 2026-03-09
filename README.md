@@ -21,7 +21,7 @@ MCP (Model Context Protocol) server para integração com Microsoft 365 (Outlook
 ### 1. Clonar e instalar
 
 ```bash
-git clone https://github.com/ericluciano/outlook-mcp.git
+git clone https://github.com/ericlucianoferreira/outlook-mcp.git
 cd outlook-mcp
 npm install
 ```
@@ -82,6 +82,15 @@ Feche e reabra o Claude Desktop para carregar o MCP.
 - `People.Read` — buscar contatos
 - `User.Read` — identificar a conta autenticada
 - `offline_access` — renovar token sem re-autenticar
+
+## Exemplos de uso
+
+- "Mostre meus e-mails não lidos"
+- "Quais compromissos tenho hoje?"
+- "Envie um e-mail para joao@empresa.com com assunto Reunião de alinhamento"
+- "Verifique a disponibilidade do Pedro para amanhã das 9h às 18h"
+- "Crie um compromisso amanhã das 14h às 15h: Reunião com cliente"
+- "Responda o último e-mail do João dizendo que confirmo a reunião"
 
 ## Segurança
 
