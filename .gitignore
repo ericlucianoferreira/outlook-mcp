@@ -1,9 +1,27 @@
 node_modules/
-.token-cache.json
-.rate-limit.json
 .env
 *.log
+
+# Tokens e cache OAuth
+.token-cache.json
+.rate-limit.json
 
 # Arquivos de teste local
 test*.js
 test*.ts
+
+# Backups de maquina
+*-ERICLUCIANO-PC*
+*-*-PC.*
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Claude
+.claude/
