@@ -75,15 +75,46 @@ export async function checkAvailability(params) {
     return "Nenhuma informação de disponibilidade retornada.";
   }
 
-  // A Graph API retorna scheduleItems[].start.dateTime sem sufixo de timezone —
-  // o valor já está no fuso enviado na requisição. Tratar como local appending o fuso
-  // via Intl para evitar que o JS interprete como UTC.
-  function localDateTimeToHHMM(dateTimeStr) {
-    // dateTimeStr ex: "2026-02-26T14:20:00" (sem Z, sem offset) — já é horário local
-    // Parseamos as partes diretamente para não sofrer conversão UTC
-    const [, timePart] = dateTimeStr.split("T");
-    const [hh, mm] = timePart.split(":");
-    return `${hh}:${mm}`;
+  // A Graph API retorna scheduleItems[].start com { dateTime, timeZone }.
+  // O timeZone da resposta frequentemente é "UTC" mesmo quando a requisição
+  // especifica outro fuso. Precisamos converter para o fuso solicitado.
+  function toLocalHHMM(dateTimeStr, sourceTZ, targetTZ) {
+    // Limpa frações de segundo do formato Graph API (ex: ".0000000")
+    const clean = dateTimeStr.split(".")[0];
+
+    // Se timezone de origem = destino (ou não informada), extrai direto
+    if (!sourceTZ || sourceTZ === targetTZ) {
+      const timePart = clean.split("T")[1] || "00:00";
+      return timePart.substring(0, 5);
+    }
+
+    // Converte de sourceTZ para targetTZ
+    let utcMs;
+    if (sourceTZ.toLowerCase() === "utc") {
+      // dateTime está em UTC — adiciona Z para criar Date correto
+      utcMs = new Date(clean + "Z").getTime();
+    } else {
+      // Para outros fusos: descobre o offset do sourceTZ e ajusta para UTC
+      const naiveUTC = new Date(clean + "Z");
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: sourceTZ,
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour12: false,
+      }).formatToParts(naiveUTC);
+      const get = (type) => parseInt(parts.find((p) => p.type === type)?.value || "0");
+      const hr = get("hour") === 24 ? 0 : get("hour");
+      const localAsUTC = Date.UTC(get("year"), get("month") - 1, get("day"), hr, get("minute"), get("second"));
+      const offsetMs = localAsUTC - naiveUTC.getTime();
+      utcMs = naiveUTC.getTime() - offsetMs;
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      timeZone: targetTZ,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(utcMs));
   }
 
   // Monta mapa de disponibilidade por pessoa
@@ -94,8 +125,8 @@ export async function checkAvailability(params) {
 
     const blocos = schedule.scheduleItems || [];
     const ocupados = blocos.map((item) => {
-      const iniStr = localDateTimeToHHMM(item.start.dateTime);
-      const fimStr = localDateTimeToHHMM(item.end.dateTime);
+      const iniStr = toLocalHHMM(item.start.dateTime, item.start.timeZone, fuso_horario);
+      const fimStr = toLocalHHMM(item.end.dateTime, item.end.timeZone, fuso_horario);
       const titulo = item.subject ? ` — "${item.subject}"` : "";
       const tipoStatus = item.status === "oof" ? " [Fora do escritório]" : item.status === "tentative" ? " [Tentativa]" : "";
       return `  • ${iniStr} – ${fimStr}${titulo}${tipoStatus}`;

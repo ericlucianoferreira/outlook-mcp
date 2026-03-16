@@ -72,6 +72,7 @@ export async function graphRequestPaginated(endpoint, maxItems = 1000) {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
+        "Prefer": 'outlook.timezone="America/Sao_Paulo"',
       },
     });
 
@@ -116,6 +117,7 @@ export async function graphRequest(method, endpoint, body = null) {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      "Prefer": 'outlook.timezone="America/Sao_Paulo"',
     },
   };
 

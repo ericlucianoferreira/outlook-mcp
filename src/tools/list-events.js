@@ -48,7 +48,7 @@ export async function listEvents(params) {
   const endISO = fim.toISOString();
   const top = Math.min(quantidade, 500);
 
-  const endpoint = `/me/calendarView?startDateTime=${startISO}&endDateTime=${endISO}&$top=${top}&$orderby=start/dateTime&$select=id,subject,start,end,location,organizer,isAllDay,bodyPreview,webLink`;
+  const endpoint = `/me/calendarView?startDateTime=${startISO}&endDateTime=${endISO}&$top=${top}&$orderby=start/dateTime&$select=id,subject,start,end,location,organizer,isAllDay,bodyPreview,webLink,showAs`;
 
   const result = await graphRequestPaginated(endpoint, 1000);
 
@@ -83,6 +83,8 @@ export async function listEvents(params) {
     return `${dia}/${mes}/${ano}, ${hh}:${mm}`;
   }
 
+  const statusMap = { free: "Livre", busy: "Ocupado", tentative: "Provisório", oof: "Ausente", workingElsewhere: "Trabalhando em outro lugar", unknown: "Desconhecido" };
+
   const eventos = eventos_raw.map((ev, i) => {
     const inicioEv = ev.isAllDay
       ? fmtLocal(ev.start.dateTime, true)
@@ -94,8 +96,9 @@ export async function listEvents(params) {
     const organizador = ev.organizer?.emailAddress?.name || ev.organizer?.emailAddress?.address || "";
     const orgStr = organizador ? `\n   Organizador: ${organizador}` : "";
     const diaInteiro = ev.isAllDay ? " [Dia inteiro]" : "";
+    const status = ev.showAs ? `\n   Status: ${statusMap[ev.showAs] || ev.showAs}` : "";
 
-    return `${i + 1}. ${ev.subject || "(sem título)"}${diaInteiro}\n   Horário: ${inicioEv}${fimEv}${local}${orgStr}`;
+    return `${i + 1}. ${ev.subject || "(sem título)"}${diaInteiro}\n   Horário: ${inicioEv}${fimEv}${local}${orgStr}${status}`;
   });
 
   const dataExibicao = inicio.toLocaleDateString("pt-BR", { timeZone: fuso }); // inicio é construído com offset explícito, seguro
